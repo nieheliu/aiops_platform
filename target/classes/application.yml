@@ -1,0 +1,55 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ops-ai-platform
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://192.168.30.131:3306/ops_ai_platform?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root1
+    password: '1'
+  rabbitmq:
+    host: 192.168.30.131
+    port: 5672
+    username: admin
+    password: '1'
+    virtual-host: /
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 1
+        retry:
+          enabled: false
+  data:
+    redis:
+      host: 192.168.30.131
+      port: 6379
+      password: '1'
+      database: 0
+      timeout: 3000ms
+  elasticsearch:
+    uris: http://192.168.30.131:9200
+  ai:
+    openai:
+      api-key: ${ARK_API_KEY:}
+      base-url: https://ark.cn-beijing.volces.com/api/v3
+      chat:
+        completions-path: /chat/completions
+        options:
+          model: ep-20260603114933-rvfb5
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+
+jwt:
+  secret: "ops-ai-platform-jwt-secret-key-for-hs256-at-least-32-bytes"
+  expiration: 86400000
+  header: Authorization
+  token-prefix: Bearer
