@@ -34,6 +34,16 @@
         <el-table-column label="邮箱" min-width="180">
           <template #default="{ row }">{{ row.email || '-' }}</template>
         </el-table-column>
+        <el-table-column label="角色" min-width="180">
+          <template #default="{ row }">
+            <template v-if="row.roleList?.length">
+              <el-tag v-for="role in row.roleList" :key="role.id" effect="light" class="role-tag">
+                {{ role.roleName }}
+              </el-tag>
+            </template>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column label="状态" width="100">
           <template #default="{ row }">
             <el-tag :type="Number(row.status) === 1 ? 'success' : 'info'" effect="light">
@@ -49,9 +59,9 @@
             <el-button type="primary" link @click="openEditDialog(row)">编辑</el-button>
             <el-button type="primary" link @click="openRoleDialog(row)">分配角色</el-button>
             <el-button type="warning" link @click="handleResetPassword(row)">重置密码</el-button>
-            <el-button v-if="Number(row.status) === 1" type="info" link @click="handleDisable(row)">禁用</el-button>
-            <el-button v-else type="success" link @click="handleEnable(row)">启用</el-button>
-            <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
+            <el-button v-if="!isBuiltInAdmin(row) && Number(row.status) === 1" type="info" link @click="handleDisable(row)">禁用</el-button>
+            <el-button v-if="!isBuiltInAdmin(row) && Number(row.status) !== 1" type="success" link @click="handleEnable(row)">启用</el-button>
+            <el-button v-if="!isBuiltInAdmin(row)" type="danger" link @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -102,11 +112,17 @@
           <span>{{ currentUser?.username }}</span>
         </el-form-item>
         <el-form-item label="角色">
-          <el-checkbox-group v-model="selectedRoleIds">
-            <el-checkbox v-for="role in roles" :key="role.id" :label="role.id">
+          <el-radio-group v-model="selectedRoleId">
+            <el-radio
+              v-for="role in roles"
+              :key="role.id"
+              :label="role.id"
+              :disabled="isBuiltInAdmin(currentUser) && role.roleCode === 'ADMIN'"
+            >
               {{ role.roleName }}（{{ role.roleCode }}）
-            </el-checkbox>
-          </el-checkbox-group>
+            </el-radio>
+          </el-radio-group>
+          <div class="role-tip">每个用户只能拥有一个角色。</div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -120,6 +136,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useAuthStore } from '../stores/auth'
 import {
   assignUserRoles,
   createUser,
@@ -133,6 +150,8 @@ import {
   updateUser,
 } from '../api/system'
 
+const authStore = useAuthStore()
+
 const loading = ref(false)
 const submitting = ref(false)
 const roleSubmitting = ref(false)
@@ -143,7 +162,7 @@ const roleVisible = ref(false)
 const isEdit = ref(false)
 const formRef = ref()
 const currentUser = ref(null)
-const selectedRoleIds = ref([])
+const selectedRoleId = ref(null)
 
 const query = reactive({ username: '', realName: '', status: '' })
 const page = reactive({ current: 1, size: 10 })
@@ -190,11 +209,20 @@ function resetForm(row = createEmptyForm()) {
   Object.assign(form, createEmptyForm(), row, { password: '' })
 }
 
+function isBuiltInAdmin(row) {
+  return String(row?.username || '').toLowerCase() === 'admin'
+}
+
 async function loadData() {
   loading.value = true
   try {
     const [userData, roleData] = await Promise.all([getUsers(), getRoles()])
-    users.value = normalizeList(userData)
+    const userList = normalizeList(userData)
+    const roleAssignments = await Promise.all(userList.map((user) => getUserRoles(user.id)))
+    users.value = userList.map((user, index) => ({
+      ...user,
+      roleList: normalizeList(roleAssignments[index]),
+    }))
     roles.value = normalizeList(roleData)
   } finally {
     loading.value = false
@@ -246,15 +274,30 @@ async function openRoleDialog(row) {
   currentUser.value = row
   roleVisible.value = true
   const userRoles = normalizeList(await getUserRoles(row.id))
-  selectedRoleIds.value = userRoles.map((role) => role.id)
+  selectedRoleId.value = userRoles[0]?.id ?? null
 }
 
 async function submitRoles() {
+  if (isBuiltInAdmin(currentUser.value)) {
+    const adminRole = roles.value.find((role) => role.roleCode === 'ADMIN')
+    if (adminRole && selectedRoleId.value !== adminRole.id) {
+      ElMessage.warning('内置管理员必须保留 ADMIN 角色')
+      return
+    }
+  }
+  if (!selectedRoleId.value) {
+    ElMessage.warning('请选择一个角色')
+    return
+  }
   roleSubmitting.value = true
   try {
-    await assignUserRoles(currentUser.value.id, selectedRoleIds.value)
+    await assignUserRoles(currentUser.value.id, [selectedRoleId.value])
     ElMessage.success('角色已更新')
     roleVisible.value = false
+    if (String(authStore.user?.username) === String(currentUser.value?.username)) {
+      await authStore.loadCurrentUser()
+    }
+    await loadData()
   } finally {
     roleSubmitting.value = false
   }
@@ -302,5 +345,7 @@ h1 { margin: 0 0 8px; color: #111827; font-size: 26px; }
 p { margin: 0; color: #6b7280; }
 .filter-form { display: grid; grid-template-columns: 1fr 1fr 180px 88px 88px; gap: 12px; margin-top: 22px; }
 .pagination { justify-content: flex-end; margin-top: 18px; }
-:deep(.el-checkbox-group) { display: grid; gap: 10px; }
+.role-tag { margin-right: 6px; margin-bottom: 4px; }
+:deep(.el-radio-group) { display: grid; gap: 10px; }
+.role-tip { margin-top: 8px; color: #6b7280; font-size: 12px; }
 </style>

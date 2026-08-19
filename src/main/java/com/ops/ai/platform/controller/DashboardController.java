@@ -5,6 +5,7 @@ import com.ops.ai.platform.service.DashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -15,7 +16,7 @@ public class DashboardController {
     private final DashboardService dashboardService;
 
     @GetMapping("/summary")
-    public DashboardSummaryResponse summary() {
-        return dashboardService.getSummary();
+    public DashboardSummaryResponse summary(@RequestParam(defaultValue = "false") boolean refresh) {
+        return dashboardService.getSummary(refresh);
     }
 }

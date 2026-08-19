@@ -23,6 +23,14 @@
     </el-card>
 
     <el-dialog v-model="detailVisible" title="告警详情" width="720px"><el-descriptions :column="2" border><el-descriptions-item label="告警名称">{{ currentAlert?.alertName }}</el-descriptions-item><el-descriptions-item label="等级"><AlertSeverityTag :severity="currentAlert?.severity" /></el-descriptions-item><el-descriptions-item label="实例 IP">{{ currentAlert?.instanceIp }}</el-descriptions-item><el-descriptions-item label="触发时间">{{ currentAlert?.triggerTime }}</el-descriptions-item></el-descriptions><h3>原始 Payload</h3><pre>{{ formatPayload(currentAlert?.rawPayload) }}</pre></el-dialog>
+
+    <ModelSelectDialog
+      ref="modelDialogRef"
+      v-model="modelDialogVisible"
+      :alert-id="diagnoseTarget?.id"
+      :ticket-id="ticketMap[diagnoseTarget?.id]?.id"
+      @confirm="handleDiagnoseConfirm"
+    />
   </div>
 </template>
 
@@ -34,8 +42,9 @@ import { createTicketFromAlert, diagnoseAlert, getAlertList } from '../api/alert
 import { getTicketList } from '../api/ticket'
 import AlertSeverityTag from '../components/AlertSeverityTag.vue'
 import TicketStatusTag from '../components/TicketStatusTag.vue'
+import ModelSelectDialog from '../components/ModelSelectDialog.vue'
 
-const router = useRouter(); const loading = ref(false); const alerts = ref([]); const tickets = ref([]); const creatingId = ref(null); const diagnosingId = ref(null); const detailVisible = ref(false); const currentAlert = ref(null); const query = reactive({ keyword: '', severity: '' }); const page = reactive({ current: 1, size: 10 })
+const router = useRouter(); const loading = ref(false); const alerts = ref([]); const tickets = ref([]); const creatingId = ref(null); const diagnosingId = ref(null); const detailVisible = ref(false); const currentAlert = ref(null); const modelDialogVisible = ref(false); const modelDialogRef = ref(null); const diagnoseTarget = ref(null); const query = reactive({ keyword: '', severity: '' }); const page = reactive({ current: 1, size: 10 })
 const ticketMap = computed(() => Object.fromEntries(tickets.value.map((item) => [item.alertId, item])))
 const filteredAlerts = computed(() => alerts.value.filter((item) => { const keyword = query.keyword.trim().toLowerCase(); const matchKeyword = !keyword || String(item.alertName || '').toLowerCase().includes(keyword) || String(item.instanceIp || '').toLowerCase().includes(keyword); const matchSeverity = query.severity === '' || query.severity === null || Number(item.severity) === Number(query.severity); return matchKeyword && matchSeverity }))
 const pagedAlerts = computed(() => filteredAlerts.value.slice((page.current - 1) * page.size, page.current * page.size))
@@ -46,7 +55,30 @@ function handleReset() { query.keyword = ''; query.severity = ''; page.current =
 function showDetail(row) { currentAlert.value = row; detailVisible.value = true }
 function formatPayload(payload) { if (!payload) return '暂无'; try { return JSON.stringify(JSON.parse(payload), null, 2) } catch { return payload } }
 async function handleCreateTicket(row) { creatingId.value = row.id; try { const ticket = await createTicketFromAlert(row.id); ElMessage.success('工单创建成功'); await loadData(); router.push(`/tickets/${ticket.id}`) } finally { creatingId.value = null } }
-async function handleDiagnose(row) { diagnosingId.value = row.id; try { const report = await diagnoseAlert(row.id); ElMessage.success('大模型诊断报告已生成'); if (report?.id) router.push(`/diagnoses/${report.id}`) } finally { diagnosingId.value = null } }
+function handleDiagnose(row) {
+  diagnoseTarget.value = row
+  modelDialogVisible.value = true
+}
+
+async function handleDiagnoseConfirm(modelId) {
+  if (!diagnoseTarget.value) return
+  diagnosingId.value = diagnoseTarget.value.id
+  modelDialogRef.value?.setSubmitting(true)
+  try {
+    const report = await diagnoseAlert(diagnoseTarget.value.id, modelId)
+    ElMessage.success('大模型诊断报告已生成')
+    modelDialogRef.value?.close()
+    if (report?.id) router.push(`/diagnoses/${report.id}`)
+  } catch (error) {
+    const isTimeout = error?.code === 'ECONNABORTED' || /timeout/i.test(error?.message || '')
+    if (isTimeout) {
+      ElMessage.warning('诊断耗时较长，可能已在后台生成，请稍后到诊断列表查看')
+    }
+  } finally {
+    diagnosingId.value = null
+    modelDialogRef.value?.setSubmitting(false)
+  }
+}
 onMounted(loadData)
 </script>
 

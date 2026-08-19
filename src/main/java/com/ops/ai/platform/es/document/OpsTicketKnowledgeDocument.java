@@ -22,6 +22,9 @@ public class OpsTicketKnowledgeDocument {
     @Field(type = FieldType.Long)
     private Long alertId;
 
+    @Field(type = FieldType.Long)
+    private Long diagnosisId;
+
     @Field(type = FieldType.Text)
     private String title;
 
@@ -51,4 +54,35 @@ public class OpsTicketKnowledgeDocument {
 
     @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
     private LocalDateTime indexedAt;
+
+    @Field(type = FieldType.Keyword)
+    private String sourceType;
+
+    @Field(type = FieldType.Keyword)
+    private String aiModel;
+
+    @Field(type = FieldType.Long)
+    private Long knowledgeId;
+
+    @Field(type = FieldType.Keyword)
+    private String lifecycleStatus;
+
+    @Field(type = FieldType.Integer)
+    private Integer version;
+
+    @Field(type = FieldType.Keyword)
+    private String component;
+
+    @Field(type = FieldType.Text)
+    private String contentMd;
+
+    @Field(type = FieldType.Keyword)
+    private String createdByName;
+
+    @Field(type = FieldType.Keyword)
+    private String updatedByName;
+
+    /** RAG 向量检索用 embedding（nomic-embed-text，768 维） */
+    @Field(type = FieldType.Dense_Vector, dims = 768, similarity = "cosine")
+    private float[] embedding;
 }

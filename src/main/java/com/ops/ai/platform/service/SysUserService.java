@@ -2,6 +2,7 @@ package com.ops.ai.platform.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ops.ai.platform.dto.CurrentUserResponse;
+import com.ops.ai.platform.dto.UserOptionResponse;
 import com.ops.ai.platform.entity.SysUser;
 import com.ops.ai.platform.entity.SysRole;
 
@@ -23,5 +24,13 @@ public interface SysUserService extends IService<SysUser> {
 
     Boolean assignRoles(Long userId, List<Long> roleIds);
 
+    Boolean deleteUserSafely(Long id);
+
+    Boolean disableUserSafely(Long id);
+
+    List<UserOptionResponse> listEnabledUserOptions();
+
     CurrentUserResponse getCurrentUser(String username);
+
+    boolean isBuiltInAdmin(Long userId);
 }

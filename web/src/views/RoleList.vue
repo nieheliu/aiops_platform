@@ -41,7 +41,7 @@
         <el-table-column label="操作" width="160" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link @click="openEditDialog(row)">编辑</el-button>
-            <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
+            <el-button v-if="!isProtectedRole(row)" type="danger" link @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -183,7 +183,17 @@ async function submitForm() {
   }
 }
 
+const PROTECTED_ROLE_CODES = ['ADMIN', 'OPS', 'VIEWER']
+
+function isProtectedRole(row) {
+  return PROTECTED_ROLE_CODES.includes(String(row?.roleCode || '').toUpperCase())
+}
+
 async function handleDelete(row) {
+  if (isProtectedRole(row)) {
+    ElMessage.warning('系统内置角色不可删除')
+    return
+  }
   await ElMessageBox.confirm(`确认删除角色 ${row.roleName}？`, '删除确认', { type: 'warning' })
   await deleteRole(row.id)
   ElMessage.success('角色已删除')

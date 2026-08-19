@@ -11,3 +11,7 @@ export function getDiagnosisDetail(id) {
 export function diagnosisToKnowledge(id) {
   return request.post(`/ai-diagnoses/${id}/to-knowledge`)
 }
+
+export function deleteDiagnosis(id) {
+  return request.delete(`/ai-diagnoses/${id}`)
+}

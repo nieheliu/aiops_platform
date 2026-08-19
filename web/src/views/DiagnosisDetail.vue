@@ -12,7 +12,8 @@
         <el-tag v-if="diagnosis" :type="confidenceType(diagnosis.confidenceScore)" effect="light">
           置信度：{{ diagnosis.confidenceScore ?? '-' }}{{ diagnosis.confidenceScore !== null && diagnosis.confidenceScore !== undefined ? '%' : '' }}
         </el-tag>
-        <el-button type="success" :loading="knowledgeLoading" @click="handleToKnowledge">生成知识库</el-button>
+        <el-button type="success" :loading="knowledgeLoading" @click="handleToKnowledge">同步到知识库</el-button>
+        <el-button type="danger" plain :loading="deleting" @click="handleDelete">删除报告</el-button>
       </div>
     </el-card>
 
@@ -22,7 +23,7 @@
           <template #header><div class="card-title">基础信息</div></template>
           <el-descriptions :column="1" border>
             <el-descriptions-item label="诊断ID">#{{ diagnosis?.id || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="模型名称">{{ diagnosis?.aiModel || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="模型名称">{{ getModelDisplayName(diagnosis?.aiModel) }}</el-descriptions-item>
             <el-descriptions-item label="关联告警">#{{ diagnosis?.alertId || '-' }}</el-descriptions-item>
             <el-descriptions-item label="关联工单">#{{ diagnosis?.ticketId || '-' }}</el-descriptions-item>
             <el-descriptions-item label="创建时间">{{ diagnosis?.createTime || '-' }}</el-descriptions-item>
@@ -52,14 +53,16 @@
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import { diagnosisToKnowledge, getDiagnosisDetail } from '../api/diagnosis'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { deleteDiagnosis, diagnosisToKnowledge, getDiagnosisDetail } from '../api/diagnosis'
 import MarkdownViewer from '../components/MarkdownViewer.vue'
+import { getModelDisplayName } from '../utils/model'
 
 const route = useRoute()
 const router = useRouter()
 const loading = ref(false)
 const knowledgeLoading = ref(false)
+const deleting = ref(false)
 const diagnosis = ref(null)
 
 function confidenceType(value) {
@@ -84,9 +87,31 @@ async function handleToKnowledge() {
   knowledgeLoading.value = true
   try {
     await diagnosisToKnowledge(diagnosis.value.id)
-    ElMessage.success('已生成知识库草稿')
+    ElMessage.success('已同步到知识库')
   } finally {
     knowledgeLoading.value = false
+  }
+}
+
+async function handleDelete() {
+  if (!diagnosis.value?.id) return
+  try {
+    await ElMessageBox.confirm(`确认删除报告 #${diagnosis.value.id} 吗？删除后不可恢复。`, '删除诊断报告', {
+      type: 'warning',
+      confirmButtonText: '确认删除',
+      cancelButtonText: '取消',
+    })
+  } catch {
+    return
+  }
+
+  deleting.value = true
+  try {
+    await deleteDiagnosis(diagnosis.value.id)
+    ElMessage.success('诊断报告已删除')
+    router.push('/diagnoses')
+  } finally {
+    deleting.value = false
   }
 }
 

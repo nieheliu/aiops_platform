@@ -5,11 +5,11 @@ import com.ops.ai.platform.entity.OpsKnowledge;
 
 public interface AiDiagnosisWorkflowService {
 
-    AiDiagnosis diagnoseAlert(Long alertId);
+    AiDiagnosis diagnoseAlert(Long alertId, String modelId);
 
-    AiDiagnosis diagnoseTicket(Long ticketId);
+    AiDiagnosis diagnoseTicket(Long ticketId, String modelId, Long operatorUserId);
 
-    AiDiagnosis diagnoseAlertTicket(Long alertId, Long ticketId);
+    AiDiagnosis diagnoseAlertTicket(Long alertId, Long ticketId, String modelId);
 
     OpsKnowledge convertDiagnosisToKnowledge(Long diagnosisId);
 }

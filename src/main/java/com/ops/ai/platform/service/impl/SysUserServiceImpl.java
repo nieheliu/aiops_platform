@@ -3,6 +3,7 @@ package com.ops.ai.platform.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ops.ai.platform.dto.CurrentUserResponse;
+import com.ops.ai.platform.dto.UserOptionResponse;
 import com.ops.ai.platform.entity.SysRole;
 import com.ops.ai.platform.entity.SysUser;
 import com.ops.ai.platform.entity.SysUserRole;
@@ -30,6 +31,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     private static final int STATUS_ENABLED = 1;
 
     private static final int STATUS_DISABLED = 0;
+
+    private static final String BUILT_IN_ADMIN_USERNAME = "admin";
 
     private final SysRoleService sysRoleService;
 
@@ -116,18 +119,67 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     }
 
     @Override
+    public boolean isBuiltInAdmin(Long userId) {
+        if (userId == null) {
+            return false;
+        }
+        SysUser user = getById(userId);
+        return user != null && BUILT_IN_ADMIN_USERNAME.equalsIgnoreCase(user.getUsername());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean deleteUserSafely(Long id) {
+        if (isBuiltInAdmin(id)) {
+            throw new IllegalStateException("内置管理员账号不可删除");
+        }
+        sysUserRoleService.remove(new LambdaQueryWrapper<SysUserRole>().eq(SysUserRole::getUserId, id));
+        return removeById(id);
+    }
+
+    @Override
+    public Boolean disableUserSafely(Long id) {
+        if (isBuiltInAdmin(id)) {
+            throw new IllegalStateException("内置管理员账号不可禁用");
+        }
+        return disableUser(id);
+    }
+
+    @Override
+    public List<UserOptionResponse> listEnabledUserOptions() {
+        return lambdaQuery()
+                .eq(SysUser::getStatus, STATUS_ENABLED)
+                .orderByAsc(SysUser::getUsername)
+                .list()
+                .stream()
+                .map(user -> {
+                    UserOptionResponse option = new UserOptionResponse();
+                    option.setId(user.getId());
+                    option.setUsername(user.getUsername());
+                    option.setEmail(user.getEmail());
+                    return option;
+                })
+                .toList();
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean assignRoles(Long userId, List<Long> roleIds) {
         if (userId == null || getById(userId) == null) {
             throw new IllegalArgumentException("用户不存在");
         }
+        ensureBuiltInAdminKeepsAdminRole(userId, roleIds);
         sysUserRoleService.remove(new LambdaQueryWrapper<SysUserRole>().eq(SysUserRole::getUserId, userId));
         if (CollectionUtils.isEmpty(roleIds)) {
             return true;
         }
+        List<Long> distinctRoleIds = roleIds.stream().filter(id -> id != null).distinct().toList();
+        if (distinctRoleIds.size() > 1) {
+            throw new IllegalArgumentException("每个用户只能分配一个角色，请只选择一个角色");
+        }
         List<SysUserRole> userRoles = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
-        for (Long roleId : roleIds.stream().distinct().toList()) {
+        for (Long roleId : distinctRoleIds) {
             if (roleId == null || sysRoleService.getById(roleId) == null) {
                 continue;
             }
@@ -200,6 +252,21 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         if (roles.contains("OPS")) {
             return List.of("dashboard:view", "alert:manage", "ticket:manage", "diagnosis:manage", "knowledge:manage");
         }
-        return List.of("dashboard:view", "alert:view", "diagnosis:view", "knowledge:view");
+        return List.of("dashboard:view", "alert:view", "ticket:view", "diagnosis:view", "knowledge:view");
+    }
+
+    private void ensureBuiltInAdminKeepsAdminRole(Long userId, List<Long> roleIds) {
+        if (!isBuiltInAdmin(userId)) {
+            return;
+        }
+        SysRole adminRole = sysRoleService.lambdaQuery()
+                .eq(SysRole::getRoleCode, "ADMIN")
+                .one();
+        if (adminRole == null) {
+            throw new IllegalStateException("系统缺少 ADMIN 角色，无法修改内置管理员");
+        }
+        if (CollectionUtils.isEmpty(roleIds) || !roleIds.contains(adminRole.getId())) {
+            throw new IllegalStateException("内置管理员账号必须保留 ADMIN 角色");
+        }
     }
 }

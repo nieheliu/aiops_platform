@@ -27,6 +27,24 @@ public class OpsKnowledge {
 
     private Long sourceTicketId;
 
+    private Long sourceDiagnosisId;
+
+    private String lifecycleStatus;
+
+    private Integer version;
+
+    private String component;
+
+    private String entrySource;
+
+    private Long createdBy;
+
+    private Long updatedBy;
+
+    private Long reviewedBy;
+
+    private LocalDateTime reviewedAt;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 

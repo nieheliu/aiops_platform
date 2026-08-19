@@ -1,0 +1,9 @@
+.git
+.idea
+.vscode
+target
+*.iml
+web/node_modules
+web/dist
+web/.vite
+npm-debug.log*

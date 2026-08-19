@@ -6,11 +6,14 @@ import com.ops.ai.platform.entity.AiDiagnosis;
 import com.ops.ai.platform.entity.OpsKnowledge;
 import com.ops.ai.platform.service.AiDiagnosisService;
 import com.ops.ai.platform.service.AiDiagnosisWorkflowService;
+import com.ops.ai.platform.service.DashboardCacheService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.io.Serializable;
 
 @RestController
 @RequiredArgsConstructor
@@ -21,9 +24,20 @@ public class AiDiagnosisController extends BaseController<AiDiagnosis> {
 
     private final AiDiagnosisWorkflowService aiDiagnosisWorkflowService;
 
+    private final DashboardCacheService dashboardCacheService;
+
     @Override
     protected IService<AiDiagnosis> service() {
         return aiDiagnosisService;
+    }
+
+    @Override
+    public Boolean delete(@PathVariable Serializable id) {
+        boolean removed = aiDiagnosisService.removeById(id);
+        if (removed) {
+            dashboardCacheService.evictSummary();
+        }
+        return removed;
     }
 
     @PostMapping("/{id}/to-knowledge")

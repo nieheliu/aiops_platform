@@ -3,9 +3,12 @@ import { ElMessage } from 'element-plus'
 import router from '../router'
 import { useAuthStore } from '../stores/auth'
 
+export const DEFAULT_TIMEOUT = 15000
+export const DIAGNOSE_TIMEOUT = 120000
+
 const request = axios.create({
   baseURL: '',
-  timeout: 15000,
+  timeout: DEFAULT_TIMEOUT,
 })
 
 request.interceptors.request.use(
@@ -30,8 +33,9 @@ request.interceptors.response.use(
       authStore.logout()
       router.replace('/login')
       ElMessage.error('登录状态已过期，请重新登录')
-    } else {
-      ElMessage.error(message)
+    } else if (!error.config?.skipErrorToast) {
+      const isTimeout = error.code === 'ECONNABORTED' || /timeout/i.test(message)
+      ElMessage.error(isTimeout ? '请求超时，请稍后刷新页面查看结果' : message)
     }
 
     return Promise.reject(error)

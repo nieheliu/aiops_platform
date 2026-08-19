@@ -1,0 +1,28 @@
+# 本地环境配置
+local.env
+
+# 构建产物
+target/
+web/node_modules/
+web/dist/
+
+# IDE 配置
+.idea/
+*.iml
+.vscode/
+
+# Claude 本地配置
+.claude/
+
+# 个人面试文档
+简历_aiops项目_面试准备.md
+
+# 课程设计文档 / 二进制打包
+*.docx
+*.pdf
+monitor.zip
+monitor/
+云原生智能运维与工单服务平台系统设计过程.md
+报告分工.md
+组员B-图与表说明文字.md
+组员B-课程设计报告内容.md

@@ -1,4 +1,4 @@
-import request from '../utils/request'
+import request, { DIAGNOSE_TIMEOUT } from '../utils/request'
 
 export function getAlertList() {
   return request.get('/ops-alerts')
@@ -12,8 +12,8 @@ export function createTicketFromAlert(id) {
   return request.post(`/ops-alerts/${id}/create-ticket`)
 }
 
-export function diagnoseAlert(id) {
-  return request.post(`/ops-alerts/${id}/diagnose`)
+export function diagnoseAlert(id, modelId) {
+  return request.post(`/ops-alerts/${id}/diagnose`, { modelId }, { timeout: DIAGNOSE_TIMEOUT })
 }
 
 export function getAlertDiagnoses(id) {

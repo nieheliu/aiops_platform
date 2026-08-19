@@ -3,6 +3,7 @@ package com.ops.ai.platform.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ops.ai.platform.common.BaseController;
+import com.ops.ai.platform.dto.DiagnoseRequest;
 import com.ops.ai.platform.entity.AiDiagnosis;
 import com.ops.ai.platform.entity.OpsAlert;
 import com.ops.ai.platform.entity.OpsTicket;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -43,8 +45,8 @@ public class OpsAlertController extends BaseController<OpsAlert> {
     }
 
     @PostMapping("/{id}/diagnose")
-    public AiDiagnosis diagnose(@PathVariable Long id) {
-        return aiDiagnosisWorkflowService.diagnoseAlert(id);
+    public AiDiagnosis diagnose(@PathVariable Long id, @RequestBody DiagnoseRequest request) {
+        return aiDiagnosisWorkflowService.diagnoseAlert(id, request == null ? null : request.getModelId());
     }
 
     @GetMapping("/{id}/diagnoses")

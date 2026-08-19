@@ -6,6 +6,7 @@ import com.ops.ai.platform.entity.OpsTicket;
 import com.ops.ai.platform.entity.OpsTicketLog;
 import com.ops.ai.platform.entity.SysUser;
 import com.ops.ai.platform.service.AiDiagnosisWorkflowService;
+import com.ops.ai.platform.service.AiModelService;
 import com.ops.ai.platform.service.AlertWorkflowService;
 import com.ops.ai.platform.service.OpsAlertService;
 import com.ops.ai.platform.service.OpsTicketLogService;
@@ -36,6 +37,8 @@ public class AlertWorkflowServiceImpl implements AlertWorkflowService {
     private final SysUserService sysUserService;
 
     private final AiDiagnosisWorkflowService aiDiagnosisWorkflowService;
+
+    private final AiModelService aiModelService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -72,7 +75,7 @@ public class AlertWorkflowServiceImpl implements AlertWorkflowService {
 
     private void diagnoseAlertTicket(Long alertId, Long ticketId) {
         try {
-            aiDiagnosisWorkflowService.diagnoseAlertTicket(alertId, ticketId);
+            aiDiagnosisWorkflowService.diagnoseAlertTicket(alertId, ticketId, aiModelService.getDefaultModelId());
         } catch (Exception e) {
             log.warn("AI diagnosis failed, alertId={}, ticketId={}", alertId, ticketId, e);
         }

@@ -4,6 +4,10 @@ export function getUsers() {
   return request.get('/sys-users')
 }
 
+export function getEnabledUserOptions() {
+  return request.get('/sys-users/enabled-options')
+}
+
 export function getUserPage(params) {
   return request.get('/sys-users/page', { params })
 }

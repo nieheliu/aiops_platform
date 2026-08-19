@@ -13,7 +13,7 @@
           <span>缓存过期：{{ summary.expireSeconds || 300 }} 秒</span>
         </div>
       </div>
-      <el-button type="primary" size="large" :loading="loading" @click="loadDashboardData">刷新数据</el-button>
+      <el-button type="primary" size="large" :loading="loading" @click="loadDashboardData(true)">刷新数据</el-button>
     </div>
 
     <div class="metrics">
@@ -24,6 +24,7 @@
         <div>
           <div class="metric-value">{{ item.value }}</div>
           <div class="metric-label">{{ item.label }}</div>
+          <div v-if="item.hint" class="metric-hint">{{ item.hint }}</div>
         </div>
       </el-card>
     </div>
@@ -103,16 +104,23 @@ let alertTrendChart = null
 let ticketStatusChart = null
 let alertSeverityChart = null
 
+const grafanaBase = import.meta.env.VITE_GRAFANA_BASE || 'http://192.168.88.136:3000'
 const grafanaPanels = [
-  { title: '系统平均负载', src: 'http://192.168.30.131:31735/d/9CWBz0bik/1-node-exporter-0-16-0-17-for-prometheus-jian-kong-zhan-shi-kan-ban?orgId=1&panelId=13&fullscreen&from=1780539499704&to=1780539799704&var-interval=1m&var-env=&var-name=&var-node=cka-master&var-maxmount=%2Frootfs' },
-  { title: '内存使用率', src: 'http://192.168.30.131:31735/d/9CWBz0bik/1-node-exporter-0-16-0-17-for-prometheus-jian-kong-zhan-shi-kan-ban?orgId=1&panelId=164&fullscreen&from=1780539549723&to=1780539849723&var-interval=1m&var-env=&var-name=&var-node=cka-master&var-maxmount=%2Frootfs' },
+  {
+    title: '系统平均负载',
+    src: `${grafanaBase}/d-solo/rYdddlPWk/node-exporter-full?orgId=1&panelId=77&refresh=30s&theme=light`,
+  },
+  {
+    title: '内存使用率',
+    src: `${grafanaBase}/d-solo/rYdddlPWk/node-exporter-full?orgId=1&panelId=78&refresh=30s&theme=light`,
+  },
 ]
 
 const metrics = computed(() => [
   { label: '今日总告警数', value: summary.value.todayAlertCount, icon: 'Bell', color: 'linear-gradient(135deg, #ef4444, #f97316)' },
   { label: '待处理工单', value: summary.value.pendingTicketCount, icon: 'Tickets', color: 'linear-gradient(135deg, #f59e0b, #eab308)' },
   { label: '今日AI诊断', value: summary.value.todayDiagnosisCount, icon: 'Cpu', color: 'linear-gradient(135deg, #2563eb, #06b6d4)' },
-  { label: '知识库条目', value: summary.value.knowledgeCount, icon: 'Collection', color: 'linear-gradient(135deg, #7c3aed, #db2777)' },
+  { label: '知识库条目', value: summary.value.knowledgeCount, hint: 'Elasticsearch 索引', icon: 'Collection', color: 'linear-gradient(135deg, #7c3aed, #db2777)' },
 ])
 
 function renderCharts() {
@@ -146,10 +154,10 @@ function renderCharts() {
   })
 }
 
-async function loadDashboardData() {
+async function loadDashboardData(forceRefresh = false) {
   loading.value = true
   try {
-    summary.value = await getDashboardSummary()
+    summary.value = await getDashboardSummary(forceRefresh)
     await nextTick()
     renderCharts()
   } catch (error) {
@@ -191,6 +199,7 @@ onBeforeUnmount(() => {
 .metric-icon { display: grid; width: 54px; height: 54px; place-items: center; border-radius: 18px; color: #fff; font-size: 24px; }
 .metric-value { font-size: 28px; font-weight: 800; color: #111827; }
 .metric-label { margin-top: 4px; color: #6b7280; }
+.metric-hint { margin-top: 2px; color: #9ca3af; font-size: 12px; }
 .section-row { width: 100%; }
 .card-title { font-weight: 700; color: #111827; }
 .chart { width: 100%; height: 340px; }

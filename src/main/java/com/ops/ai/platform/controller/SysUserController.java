@@ -10,6 +10,7 @@ import com.ops.ai.platform.entity.SysRole;
 import com.ops.ai.platform.entity.SysUser;
 import com.ops.ai.platform.service.SysUserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.Serializable;
 import java.util.List;
 
 @RestController
@@ -73,9 +75,20 @@ public class SysUserController extends BaseController<SysUser> {
         return sysUserService.enableUser(id);
     }
 
+    @Override
+    @DeleteMapping("/{id}")
+    public Boolean delete(@PathVariable Serializable id) {
+        return sysUserService.deleteUserSafely(Long.valueOf(id.toString()));
+    }
+
+    @GetMapping("/enabled-options")
+    public List<com.ops.ai.platform.dto.UserOptionResponse> enabledOptions() {
+        return sysUserService.listEnabledUserOptions();
+    }
+
     @PostMapping("/{id}/disable")
     public Boolean disable(@PathVariable Long id) {
-        return sysUserService.disableUser(id);
+        return sysUserService.disableUserSafely(id);
     }
 
     @PostMapping("/{id}/reset-password")

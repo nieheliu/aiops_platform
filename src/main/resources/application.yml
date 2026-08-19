@@ -6,14 +6,14 @@ spring:
     name: ops-ai-platform
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://192.168.30.131:3306/ops_ai_platform?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-    username: root1
-    password: '1'
+    url: jdbc:mysql://${MYSQL_HOST:192.168.88.136}:${MYSQL_PORT:3306}/${MYSQL_DB:ops_ai_platform}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USERNAME:root1}
+    password: ${MYSQL_PASSWORD:1}
   rabbitmq:
-    host: 192.168.30.131
-    port: 5672
-    username: admin
-    password: '1'
+    host: ${RABBITMQ_HOST:192.168.88.136}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:admin}
+    password: ${RABBITMQ_PASSWORD:1}
     virtual-host: /
     listener:
       simple:
@@ -23,21 +23,21 @@ spring:
           enabled: false
   data:
     redis:
-      host: 192.168.30.131
-      port: 6379
-      password: '1'
+      host: ${REDIS_HOST:192.168.88.136}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:1}
       database: 0
       timeout: 3000ms
   elasticsearch:
-    uris: http://192.168.30.131:9200
+    uris: ${ES_URIS:http://192.168.88.137:9200}
   ai:
     openai:
-      api-key: ${ARK_API_KEY:}
-      base-url: https://ark.cn-beijing.volces.com/api/v3
+      api-key: ${ARK_API_KEY:placeholder}
+      base-url: https://opencode.ai/zen/v1
       chat:
         completions-path: /chat/completions
         options:
-          model: ep-20260603114933-rvfb5
+          model: deepseek-v4-flash-free
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
@@ -49,7 +49,50 @@ mybatis-plus:
       id-type: auto
 
 jwt:
-  secret: "ops-ai-platform-jwt-secret-key-for-hs256-at-least-32-bytes"
+  secret: ${JWT_SECRET:ops-ai-platform-jwt-secret-key-for-hs256-at-least-32-bytes}
   expiration: 86400000
   header: Authorization
   token-prefix: Bearer
+
+aiops:
+  default-model-id: deepseek-v4-flash-free
+  models:
+    - id: deepseek-v4-flash-free
+      name: DeepSeek V4 Flash 免费版
+      provider: opencode
+      base-url: https://opencode.ai/zen/v1
+      api-key-env: OPENCODE_API_KEY
+      model: deepseek-v4-flash-free
+      free: true
+    - id: qwen-plus-2025-07-28
+      name: 通义千问 Plus
+      provider: bailian
+      base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      api-key-env: BAILIAN_API_KEY
+      model: qwen-plus-2025-07-28
+      free: true
+    - id: qwen3.6-plus
+      name: 通义千问 3.6 Plus
+      provider: bailian
+      base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      api-key-env: BAILIAN_API_KEY
+      model: qwen3.6-plus
+      free: true
+    - id: MiniMax-M2.5
+      name: MiniMax M2.5
+      provider: bailian
+      base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      api-key-env: BAILIAN_API_KEY
+      model: MiniMax-M2.5
+      free: true
+    - id: qwen2.5-7b-local
+      name: 通义千问 2.5 7B 本地(Ollama)
+      provider: ollama
+      base-url: http://localhost:11434/v1
+      api-key-env: dummy
+      model: qwen2.5:7b-instruct
+      free: true
+  rag:
+    enabled: true
+    top-k: 3
+    min-score: 0.5

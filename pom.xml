@@ -128,7 +128,6 @@
                 <version>3.2.12</version>
                 <configuration>
                     <mainClass>com.ops.ai.platform.OpsAiPlatformApplication</mainClass>
-                    <jvm>C:\Program Files\Java\jdk-17.0.2\bin\java.exe</jvm>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>

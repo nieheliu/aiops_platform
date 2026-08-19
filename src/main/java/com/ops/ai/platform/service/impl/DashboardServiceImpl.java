@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ops.ai.platform.dto.DashboardSummaryResponse;
 import com.ops.ai.platform.dto.StatItem;
 import com.ops.ai.platform.mapper.DashboardMapper;
+import com.ops.ai.platform.service.DashboardCacheService;
 import com.ops.ai.platform.service.DashboardService;
+import com.ops.ai.platform.service.TicketKnowledgeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -25,19 +27,30 @@ import java.util.Optional;
 public class DashboardServiceImpl implements DashboardService {
 
     private static final String DASHBOARD_SUMMARY_KEY = "aiops:dashboard:summary";
-    private static final Duration CACHE_TTL = Duration.ofMinutes(5);
+    private static final Duration CACHE_TTL = Duration.ofMinutes(1);
 
     private final DashboardMapper dashboardMapper;
+    private final TicketKnowledgeService ticketKnowledgeService;
+    private final DashboardCacheService dashboardCacheService;
     private final StringRedisTemplate stringRedisTemplate;
     private final ObjectMapper objectMapper;
 
     @Override
     public DashboardSummaryResponse getSummary() {
-        DashboardSummaryResponse cached = getFromCache();
-        if (cached != null) {
-            cached.setCacheHit(true);
-            cached.setExpireSeconds(CACHE_TTL.toSeconds());
-            return cached;
+        return getSummary(false);
+    }
+
+    @Override
+    public DashboardSummaryResponse getSummary(boolean forceRefresh) {
+        if (forceRefresh) {
+            dashboardCacheService.evictSummary();
+        } else {
+            DashboardSummaryResponse cached = getFromCache();
+            if (cached != null) {
+                cached.setCacheHit(true);
+                cached.setExpireSeconds(CACHE_TTL.toSeconds());
+                return cached;
+            }
         }
 
         DashboardSummaryResponse summary = buildSummaryFromDatabase();
@@ -76,7 +89,7 @@ public class DashboardServiceImpl implements DashboardService {
         summary.setTodayAlertCount(nullToZero(dashboardMapper.countTodayAlerts(startOfDay, startOfTomorrow)));
         summary.setPendingTicketCount(nullToZero(dashboardMapper.countPendingTickets()));
         summary.setTodayDiagnosisCount(nullToZero(dashboardMapper.countTodayDiagnoses(startOfDay, startOfTomorrow)));
-        summary.setKnowledgeCount(nullToZero(dashboardMapper.countKnowledge()));
+        summary.setKnowledgeCount(nullToZero(ticketKnowledgeService.countDocuments()));
         summary.setTicketStatusStats(dashboardMapper.countTicketStatusStats());
         summary.setAlertSeverityStats(dashboardMapper.countAlertSeverityStats());
         summary.setAlertTrend(fillLastSevenDaysTrend(dashboardMapper.countAlertTrend(trendStartTime)));

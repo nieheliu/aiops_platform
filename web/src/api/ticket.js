@@ -1,4 +1,4 @@
-import request from '../utils/request'
+import request, { DIAGNOSE_TIMEOUT } from '../utils/request'
 
 export function getTicketPage(params) {
   return request.get('/ops-tickets/page', { params })
@@ -24,6 +24,10 @@ export function startTicket(id) {
   return request.post(`/ops-tickets/${id}/start`)
 }
 
+export function assignTicketHandler(id, handlerUserId) {
+  return request.put(`/ops-tickets/${id}/assign`, { handlerUserId })
+}
+
 export function resolveTicket(id, data) {
   return request.post(`/ops-tickets/${id}/resolve`, data)
 }
@@ -32,8 +36,8 @@ export function closeTicket(id) {
   return request.post(`/ops-tickets/${id}/close`)
 }
 
-export function diagnoseTicket(id) {
-  return request.post(`/ops-tickets/${id}/diagnose`)
+export function diagnoseTicket(id, modelId) {
+  return request.post(`/ops-tickets/${id}/diagnose`, { modelId }, { timeout: DIAGNOSE_TIMEOUT })
 }
 
 export function getTicketDiagnoses(id) {

@@ -36,6 +36,7 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
         try {
             jwtTokenProvider.validateToken(token);
             request.setAttribute("currentUsername", jwtTokenProvider.getUsernameFromToken(token));
+            request.setAttribute("currentUserId", jwtTokenProvider.getUserIdFromToken(token));
             return true;
         } catch (Exception e) {
             writeUnauthorizedResponse(response, "Token无效或已过期");

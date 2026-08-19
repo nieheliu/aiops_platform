@@ -1,7 +1,7 @@
 import request from '../utils/request'
 
-export function getDashboardSummary() {
-  return request.get('/dashboard/summary')
+export function getDashboardSummary(refresh = false) {
+  return request.get('/dashboard/summary', { params: { refresh } })
 }
 
 export function getAlerts() {

@@ -45,8 +45,8 @@
         <el-table-column prop="alertId" label="关联告警" width="120">
           <template #default="{ row }">#{{ row.alertId || '-' }}</template>
         </el-table-column>
-        <el-table-column prop="handlerUserId" label="处理人" width="120">
-          <template #default="{ row }">{{ row.handlerUserId ? `用户 ${row.handlerUserId}` : '未分配' }}</template>
+        <el-table-column prop="handlerUserId" label="处理人" width="140">
+          <template #default="{ row }">{{ formatHandler(row.handlerUserId) }}</template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="180" />
         <el-table-column prop="updateTime" label="更新时间" width="180" />
@@ -73,12 +73,15 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { getEnabledUserOptions } from '../api/system'
 import { getTicketList, getTicketPage } from '../api/ticket'
 import TicketStatusTag from '../components/TicketStatusTag.vue'
 
 const router = useRouter()
 const loading = ref(false)
 const tickets = ref([])
+const userOptions = ref([])
+const userNameMap = computed(() => Object.fromEntries(userOptions.value.map((item) => [String(item.id), item.username])))
 const query = reactive({
   keyword: '',
   status: '',
@@ -109,6 +112,15 @@ function normalizePageData(data) {
   return data?.records || data?.list || data?.data?.records || data?.data || []
 }
 
+function formatHandler(handlerUserId) {
+  if (!handlerUserId) return '未分配'
+  return userNameMap.value[String(handlerUserId)] || `用户 ${handlerUserId}`
+}
+
+async function loadUserOptions() {
+  userOptions.value = normalizePageData(await getEnabledUserOptions())
+}
+
 async function loadTickets() {
   loading.value = true
   try {
@@ -134,7 +146,9 @@ function handleReset() {
   pagination.current = 1
 }
 
-onMounted(loadTickets)
+onMounted(async () => {
+  await Promise.all([loadUserOptions(), loadTickets()])
+})
 </script>
 
 <style scoped>

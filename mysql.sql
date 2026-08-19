@@ -120,12 +120,14 @@ CREATE TABLE `ops_knowledge` (
   `sync_es_status` TINYINT NOT NULL DEFAULT 0 COMMENT 'ES同步状态: 0-未同步,1-已同步,2-同步失败',
   `source_alert_id` BIGINT UNSIGNED DEFAULT NULL COMMENT '来源告警ID(可选)',
   `source_ticket_id` BIGINT UNSIGNED DEFAULT NULL COMMENT '来源工单ID(可选)',
+  `source_diagnosis_id` BIGINT UNSIGNED DEFAULT NULL COMMENT '来源诊断ID(可选)',
   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   KEY `idx_ops_knowledge_sync_es_status` (`sync_es_status`),
   KEY `idx_ops_knowledge_source_alert_id` (`source_alert_id`),
   KEY `idx_ops_knowledge_source_ticket_id` (`source_ticket_id`),
+  KEY `idx_ops_knowledge_source_diagnosis_id` (`source_diagnosis_id`),
   CONSTRAINT `fk_ops_knowledge_source_alert_id` FOREIGN KEY (`source_alert_id`) REFERENCES `ops_alert` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT,
   CONSTRAINT `fk_ops_knowledge_source_ticket_id` FOREIGN KEY (`source_ticket_id`) REFERENCES `ops_ticket` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='知识库文档表';

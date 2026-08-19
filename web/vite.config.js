@@ -35,6 +35,10 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
+      '/ai-models': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
       '/ops-alerts': {
         target: 'http://localhost:8080',
         changeOrigin: true,
@@ -43,11 +47,15 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
-      '/dashboard': {
+      '/dashboard/summary': {
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
       '/ticket-knowledge': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '/knowledge-articles': {
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
